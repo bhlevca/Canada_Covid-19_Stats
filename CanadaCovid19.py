@@ -317,13 +317,41 @@ class CanadaCovid19(object):
     def plotMultiProvince(self,
                           provinces=None,
                           last_30_days=False,
-                          date_500cases=None
+                          date_500cases=None,
+                          date_10deaths=None
                           ):
         """
         Plots multiple provinces data in a single plot for comparison
         """
+        from scipy import interpolate
+        import time
+        def draw_tangent(x, y, a):
+            #convert timestamp to seconds to be able to interpolate
+            oneday = 3600*24
+            xsec = pd.to_datetime(x).astype(np.int64) / 10 ** 9
+            asec = time.mktime(a.timetuple())
+            spl = interpolate.splrep(xsec, y)
+            small_t = np.arange(asec - 5 * oneday, asec + 5 * oneday, step = oneday)
+            fa = interpolate.splev(asec, spl, der=0)  # f(a)
+            fprime = interpolate.splev(asec, spl, der=1)  # f'(a)
+            tan = fa + fprime * (small_t - asec)  # tangent
+            xts = datetime.fromtimestamp(asec)
+            small_ts = [datetime.fromtimestamp(t.astype(int)) for  t in small_t]
 
-        def plotCountry(dates, cases, title, last_30_days=False, date_500cases_len=None, log=False):
+            #calculate the slope
+            rate =  (tan[0]/fprime)/oneday
+            plt.plot(xts, fa, 'om', small_ts, tan, ':', linewidth=3.5)
+            plt.text(small_ts[0],
+                     fa + fa/5, 'Doubling time is {:4.1f} days'.format(rate),
+                     rotation=12,
+                     fontdict={'color': 'red', 'fontsize': 14,
+                               'ha': 'center', 'va': 'center'}
+                     )
+
+        def plotCountry(dates, cases, title, last_30_days=False,
+                        date_500cases_len=None,
+                        date_10deaths_len=None,
+                        log=False):
             """
 
             :param dates:
@@ -335,31 +363,44 @@ class CanadaCovid19(object):
             plt.figure(figsize=(12, 12))
             plt.title(title, fontsize=18)
 
-            if last_30_days == False and date_500cases_len is None:
+            if last_30_days == False and date_500cases_len is None and date_10deaths_len is None:
                 date = self.countrydict[self.countryName][dates]
                 case = self.countrydict[self.countryName][cases]
             elif last_30_days == True:
                 date = self.countrydict[self.countryName][dates][-31:-1]
                 case = self.countrydict[self.countryName][cases][-31:-1]
-            else:
+            elif date_500cases_len is not None:
                 date = self.countrydict[self.countryName][dates][-date_500cases_len:-1]
                 case = self.countrydict[self.countryName][cases][-date_500cases_len:-1]
+            elif date_10deaths_len is not None:
+                date = self.countrydict[self.countryName][dates][-date_10deaths_len:-1]
+                case = self.countrydict[self.countryName][cases][-date_10deaths_len:-1]
 
             if log == False:
                 plt.plot(date, case, '-o', color='blue', linewidth=2, markersize=4)
             else:
-                plt.semilogy(date, case, '-', linewidth=2, markersize=4, basey=10)
+                plt.semilogy(date, case, '-', linewidth=3, markersize=4, basey=10)
 
             plt.xticks(rotation=45, fontsize=14)
 
             legend = [self.countryName]
-            if date_500cases_len is not None and log == True:
-                for rate in [3, 5, 10]:
+            if (date_500cases_len is not None and log == True) or \
+               (date_10deaths_len is not None and log == True):
+                # Plot the 3, 5, 10 and 15 days of doubling the cases
+                for rate in [5, 10, 15, 20, 30]:
                     xrange = [x for x in range(0, len(date))]
-                    y_vals = [500 * pow(2, y / rate) for y in xrange]
+                    if date_10deaths_len:
+                        y_vals = [50 * pow(2, y / rate) for y in xrange]
+                    elif date_500cases_len is not None:
+                        y_vals = [500 * pow(2, y / rate) for y in xrange]
+                    else:
+                        print("Wrong set of data!")
+                        exit(2)
                     color = tuple(np.round(np.random.random(3), 3))
-                    plt.semilogy(date, y_vals, '--', color=color, basey=10)
+                    plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, basey=10)
                     legend.append("Cases double every %d days" % rate)
+                #now draw the tangent
+                draw_tangent(date, case, date.iloc[-4])
 
             plt.legend(legend, fontsize=12)
             plt.grid()
@@ -415,10 +456,19 @@ class CanadaCovid19(object):
         else:
             start = date_500cases
         end = datetime.today()
-        drange = pd.date_range(start=start, end=end)
-        ln = len(drange)
+        drange500 = pd.date_range(start=start, end=end)
+        lnc = len(drange500)
+        if date_10deaths is None:
+            start = datetime.fromisoformat('2020-03-22')
+        else:
+            start = date_10deaths
+        end = datetime.today()
+        drange10 = pd.date_range(start=start, end=end)
+        lnd = len(drange10)-5
         plotCountry('date', 'totalcases', "Cumulative cases Canada since 500 registered cases",
-                         last_30_days=False, date_500cases_len= ln, log=True)
+                         last_30_days=False, date_500cases_len=lnc, log=True)
+        plotCountry('date', 'totaldeaths', "Cumulative deaths Canada since 50 registered deaths",
+                    last_30_days=False, date_10deaths_len=lnd, log=True)
         plotSpecificCase(provinces,'date', 'totalcases', "Cumulative cases multiprovince last 30 days",
                          last_30_days=True, log=True)
         plotSpecificCase(provinces,'date', 'totaldeaths', "Cumulative deaths multiprovince last 30 days",
