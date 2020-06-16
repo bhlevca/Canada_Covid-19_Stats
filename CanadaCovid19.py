@@ -51,8 +51,9 @@ class CanadaCovid19(object):
         print("")
         self.rankProvince(N=5, daterank=None)
         print("")
-        self.scenarioPrediction(rateWINDOW=5, time_int=30)
-        print("")
+        if False:
+            self.scenarioPrediction(rateWINDOW=5, time_int=30)
+            print("")
         self.plotProvince(country, iscountry=True)
         print("")
         # province sort
@@ -334,7 +335,7 @@ class CanadaCovid19(object):
             small_t = np.arange(asec - 5 * oneday, asec + 5 * oneday, step = oneday)
             fa = interpolate.splev(asec, spl, der=0)  # f(a)
             fprime = interpolate.splev(asec, spl, der=1)  # f'(a)
-            tan = fa + fprime * (small_t - asec)  # tangent
+            tan = fa + fprime * (small_t - asec)  # tangent Y=10^(Slope*X + Yintercept)
             xts = datetime.fromtimestamp(asec)
             small_ts = [datetime.fromtimestamp(t.astype(int)) for  t in small_t]
 
@@ -343,7 +344,7 @@ class CanadaCovid19(object):
             plt.plot(xts, fa, 'om', small_ts, tan, ':', linewidth=3.5)
             plt.text(small_ts[0],
                      fa + fa/5, 'Doubling time is {:4.1f} days'.format(rate),
-                     rotation=12,
+                     rotation=2,
                      fontdict={'color': 'red', 'fontsize': 14,
                                'ha': 'center', 'va': 'center'}
                      )
@@ -409,13 +410,11 @@ class CanadaCovid19(object):
 
         def plotSpecificCase(provinces, dates, cases, title, last_30_days=False, log=False):
             """
-
             :param dates:
             :param cases:
             :param title:
             :return:
             """
-
             plt.figure(figsize=(12, 12))
             plt.title(title, fontsize=18)
 
@@ -469,9 +468,10 @@ class CanadaCovid19(object):
                          last_30_days=False, date_500cases_len=lnc, log=True)
         plotCountry('date', 'totaldeaths', "Cumulative deaths Canada since 50 registered deaths",
                     last_30_days=False, date_10deaths_len=lnd, log=True)
-        plotSpecificCase(provinces,'date', 'totalcases', "Cumulative cases multiprovince last 30 days",
+        if False:
+            plotSpecificCase(provinces,'date', 'totalcases', "Cumulative cases multiprovince last 30 days",
                          last_30_days=True, log=True)
-        plotSpecificCase(provinces,'date', 'totaldeaths', "Cumulative deaths multiprovince last 30 days",
+            plotSpecificCase(provinces,'date', 'totaldeaths', "Cumulative deaths multiprovince last 30 days",
                          last_30_days=True, log=True)
 
 

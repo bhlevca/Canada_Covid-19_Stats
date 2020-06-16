@@ -6,7 +6,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-class SEIR:
+class SEIR(object):
     def __init__(self,
                  init_vals=[1 - 1/1000, 1/1000, 0, 0], 
                  params_=[0.2,1.75,0.5,0.9]):
