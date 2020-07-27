@@ -562,12 +562,12 @@ class CanadaCovid19(object):
             """
             labels = [val[1] for val in cases]
             labels2 = ["Test"] + labels  # this is to overcome a bug in the bar function
-            # labels = ['Ontario', 'Alberta', 'Newfoundland and Labrador', 'Yukon', 'Saskatchewan']
             x = np.arange(len(labels))  # the label locations
             axs[pos].bar(x, [val[0] for val in cases], color=color, edgecolor='k')
             axs[pos].set_title("{} on {}".format(title, str(dt)), fontsize=15)
-
-            axs[pos].set_xticklabels(labels2)
+            axs[pos].xaxis.set_major_locator(plt.FixedLocator(x))
+            axs[pos].xaxis.set_major_formatter(plt.FixedFormatter(labels))
+            #axs[pos].set_xticklabels(labels2)
             axs[pos].grid(axis="y")
             plt.setp(axs[pos].xaxis.get_majorticklabels(), rotation=35, fontsize=12)
 
