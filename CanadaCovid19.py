@@ -126,7 +126,7 @@ class CanadaCovid19(object):
         :return:
         """
 
-        def calculateNewcasesAndDeaths(dataframe):
+        def calculateNewcasesDeathsAndTested(dataframe):
             """
             determine deaths based on today and previous day total deaths
             :param dataframe:
@@ -135,22 +135,28 @@ class CanadaCovid19(object):
 
             tdc = []
             tc = []
+            tt = []
             i = 0
             prevc = prevd = 0
-            for c, d in zip(dataframe['totalcases'], dataframe['totaldeaths']):
+            for c, d, t in zip(dataframe['totalcases'], dataframe['totaldeaths'], dataframe['numtested']):
                 if i != 0:
                     tdc.append(d - prevd)
                     tc.append(c - prevc)
+                    tt.append(t - prevt)
                 else:
                     tdc.append(d)
                     tc.append(c)
+                    tt.append(t)
                 prevd = d
                 prevc = c
+                prevt = t
                 i += 1
             ds_newdeaths = pd.Series(tdc, index=dataframe.index)
             ds_newcases = pd.Series(tc, index=dataframe.index)
+            ds_newtested = pd.Series(tt, index=dataframe.index)
             dataframe['newdeaths'] = ds_newdeaths
             dataframe['newcases'] = ds_newcases
+            dataframe['newtested'] = ds_newtested
             return dataframe
 
         pd.set_option('mode.chained_assignment', None)
@@ -169,7 +175,7 @@ class CanadaCovid19(object):
             country_df['numrecover'] = country_df['numrecover']
             country_df['prcrecover'] = country_df['percentrecover']
             country_df['ratetested'] = country_df['ratetested']
-            country_df = calculateNewcasesAndDeaths(country_df)
+            country_df = calculateNewcasesDeathsAndTested(country_df)
             self.countrydict[country] = country_df
 
             # provinces
@@ -187,7 +193,7 @@ class CanadaCovid19(object):
                     province_df['prcrecover'] = province_df['percentrecover']
                     province_df['ratetested'] = province_df['ratetested']
 
-                    province_df = calculateNewcasesAndDeaths(province_df)
+                    province_df = calculateNewcasesDeathsAndTested(province_df)
                     self.provincedict[c] = province_df
                     # new cases seems not to be maintained anymore so we calculate them from totalcases
                     # province_df['newcases'] = province_df['numtoday']
@@ -204,7 +210,8 @@ class CanadaCovid19(object):
     def plotProvince(self,
                      province='Ontario',
                      iscountry=False,
-                     last_30_days=False):
+                     last_30_days=False,
+                     show_tested=False):
         """
         Plots countrywise data and province data: toatla and new cases and deaths
         """
@@ -224,6 +231,7 @@ class CanadaCovid19(object):
         deaths = df['totaldeaths']
         newcases = df['newcases']
         newdeaths = df['newdeaths']
+        newtested = df['newtested']
         numtested = df['numtested']
         numrecover = df['numrecover']
 
@@ -233,6 +241,7 @@ class CanadaCovid19(object):
             deaths = df['totaldeaths'][-31:-1]
             newcases = df['newcases'][-31:-1]
             newdeaths = df['newdeaths'][-31:-1]
+            newtested = df['newtested']
             numtested = df['numtested'][-31:-1]
             numrecover = df['numrecover'][-31:-1]
 
@@ -250,6 +259,7 @@ class CanadaCovid19(object):
         plt.subplots_adjust(bottom=0.22)
         plt.grid()
         plt.show()
+
 
         print()
 
@@ -279,6 +289,28 @@ class CanadaCovid19(object):
         print()
 
         plt.figure(figsize=(13, 7))
+        wd = np.timedelta64(1,'D')
+        w = np.timedelta64(8, 'h')
+
+        if last_30_days:
+            plt.title("New cases vs. Tested in {}, for last 30 days".format(s), fontsize=18)
+        else:
+            plt.title("New cases vs. Tested in {}".format(s), fontsize=18)
+
+        plt.xticks(rotation=45, fontsize=14)
+        plt.bar(dates.values, newtested, width=w, color='cyan', label="New Tests")
+        # We have calculated GDP by dividing gdpPerCapita to population.
+        plt.bar(dates.values + w, newcases, width=w, color='blue', label="New Cases")
+        # To set the legend on the plot we have used plt.legend()
+        plt.legend()
+
+        plt.subplots_adjust(bottom=0.22)
+        plt.grid()
+        plt.show()
+        print()
+
+
+        plt.figure(figsize=(13, 7))
         if last_30_days:
             plt.title("New deaths in {}, for last 30 days".format(s), fontsize=18)
         else:
@@ -289,18 +321,19 @@ class CanadaCovid19(object):
         plt.subplots_adjust(bottom=0.22)
         plt.show()
 
-        plt.figure(figsize=(13, 7))
-        if last_30_days:
-            plt.title("Tested in {}, for last 30 days".format(s), fontsize=18)
-        else:
-            plt.title("Tested in {}".format(s), fontsize=18)
+        if show_tested:
+            plt.figure(figsize=(13, 7))
+            if last_30_days:
+                plt.title("Tested in {}, for last 30 days".format(s), fontsize=18)
+            else:
+                plt.title("Tested in {}".format(s), fontsize=18)
 
-        plt.bar(dates.values, numtested, color='orange', edgecolor='k')
-        plt.xticks(rotation=45, fontsize=14)
-        plt.subplots_adjust(bottom=0.22)
-        plt.grid()
-        plt.show()
-        print()
+            plt.bar(dates.values, numtested, color='orange', edgecolor='k')
+            plt.xticks(rotation=45, fontsize=14)
+            plt.subplots_adjust(bottom=0.22)
+            plt.grid()
+            plt.show()
+            print()
 
         plt.figure(figsize=(13, 7))
         if last_30_days:
