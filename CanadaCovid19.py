@@ -7,6 +7,7 @@
 import numpy as np
 import pandas as pd
 import io
+import sys
 import requests
 import matplotlib.pyplot as plt
 import time
@@ -213,7 +214,7 @@ class CanadaCovid19(object):
                      last_30_days=False,
                      show_tested=False):
         """
-        Plots countrywise data and province data: toatla and new cases and deaths
+        Plots countrywise data and province data: total and new cases and deaths
         """
         if not self._processed:
             print("Data not processed yet. Cannot plot countrywise.")
@@ -289,8 +290,10 @@ class CanadaCovid19(object):
         print()
 
         plt.figure(figsize=(13, 7))
-        wd = np.timedelta64(1,'D')
+        wd = np.timedelta64(24,'h')
         w = np.timedelta64(8, 'h')
+
+
 
         if last_30_days:
             plt.title("New cases vs. Tested in {}, for last 30 days".format(s), fontsize=18)
@@ -298,8 +301,7 @@ class CanadaCovid19(object):
             plt.title("New cases vs. Tested in {}".format(s), fontsize=18)
 
         plt.xticks(rotation=45, fontsize=14)
-        plt.bar(dates.values, newtested, width=w, color='cyan', label="New Tests")
-        # We have calculated GDP by dividing gdpPerCapita to population.
+        plt.bar(dates.values, abs(newtested), width=w, color='cyan', label="New Tests")
         plt.bar(dates.values + w, newcases, width=w, color='blue', label="New Cases")
         # To set the legend on the plot we have used plt.legend()
         plt.legend()
@@ -308,7 +310,6 @@ class CanadaCovid19(object):
         plt.grid()
         plt.show()
         print()
-
 
         plt.figure(figsize=(13, 7))
         if last_30_days:
@@ -413,7 +414,10 @@ class CanadaCovid19(object):
             if log == False:
                 plt.plot(date, case, '-o', color='blue', linewidth=2, markersize=4)
             else:
-                plt.semilogy(date, case, '-', linewidth=3, markersize=4, basey=10)
+                if sys.version_info < (3,8):
+                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, base=10)
+                else:
+                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, base=10)
 
             plt.xticks(rotation=45, fontsize=14)
 
@@ -431,7 +435,10 @@ class CanadaCovid19(object):
                         print("Wrong set of data!")
                         exit(2)
                     color = tuple(np.round(np.random.random(3), 3))
-                    plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, basey=10)
+                    if sys.version_info < (3,8):
+                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, base=10)
+                    else:
+                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, base=10)
                     legend.append("Cases double every %d days" % rate)
                 #now draw the tangent
                 draw_tangent(date, case, date.iloc[-4])
@@ -461,7 +468,10 @@ class CanadaCovid19(object):
                 if log == False:
                     plt.plot(date, case, '-o', color=colors[i], linewidth=2, markersize=4)
                 else:
-                    plt.semilogy(date, case, '-', color=colors[i], linewidth=2, markersize=4, basey=10)
+                    if sys.version_info < (3, 8):
+                        plt.semilogy(date, case, '-', color=colors[i], linewidth=2, markersize=4, base=10)
+                    else:
+                        plt.semilogy(date, case, '-', color=colors[i], linewidth=2, markersize=4, base=10)
 
                 plt.xticks(rotation=45, fontsize=14)
 
