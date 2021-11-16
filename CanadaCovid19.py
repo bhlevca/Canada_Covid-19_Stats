@@ -441,9 +441,9 @@ class CanadaCovid19(object):
                 plt.plot(date, case, '-o', color='blue', linewidth=2, markersize=4)
             else:
                 if sys.version_info < (3,8):
-                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, basey=10)
+                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, base=10)
                 else:
-                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, basey=10)
+                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, base=10)
 
             plt.xticks(rotation=45, fontsize=14)
 
@@ -462,9 +462,9 @@ class CanadaCovid19(object):
                         exit(2)
                     color = tuple(np.round(np.random.random(3), 3))
                     if sys.version_info < (3,8):
-                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, basey=10)
+                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, base=10)
                     else:
-                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, basey=10)
+                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, base=10)
                     legend.append("Cases double every %d days" % rate)
                 #now draw the tangent
                 draw_tangent(date, case, date.iloc[-4])
