@@ -80,6 +80,8 @@ class CanadaCovid19(object):
                    A    B       C       D     E       F       G         H         I          J          K              L        M         N
         ----------------------------------------------------------------------------------------------------------------------------------------
         HEADER: pruid,prname,prnameFR,date,numconf,numprob,numdeaths,numtotal,numtested,numrecover,percentrecover,ratetested,numtoday,percentoday
+        HEADER: pruid	prname	prnameFR	date	update	numconf	numprob	numdeaths	numtotal	numtested	numtests	numrecover	percentrecover	ratetested	ratetests	numtoday	percentoday	ratetotal	ratedeaths	numdeathstoday	percentdeath	numtestedtoday	numteststoday	numrecoveredtoday	percentactive	numactive	rateactive	numtotal_last14	ratetotal_last14	numdeaths_last14	ratedeaths_last14	numtotal_last7	ratetotal_last7	numdeaths_last7	ratedeaths_last7	avgtotal_last7	avgincidence_last7	avgdeaths_last7	avgratedeaths_last7
+
         :param url:
         :return:
         """
@@ -137,20 +139,42 @@ class CanadaCovid19(object):
             tdc = []
             tc = []
             tt = []
+            tts = []
             i = 0
+            secondswitch = False
             prevc = prevd = 0
-            for c, d, t in zip(dataframe['totalcases'], dataframe['totaldeaths'], dataframe['numtested']):
+            for c, d, t, ts in zip(dataframe['totalcases'], dataframe['totaldeaths'],
+                                   dataframe['numtested'], dataframe['numtests']):
+                #data bug and I have no way of contacting the morons
+                if ts == '1,345,309':
+                    ts = '0'
+                if isinstance(ts, str):
+                    ts=int(ts)
                 if i != 0:
                     tdc.append(d - prevd)
                     tc.append(c - prevc)
-                    tt.append(t - prevt)
+                    if not math.isnan(t):
+                        tt.append(t - prevt)
+                        secondswitch = True
+                    else:
+                        if secondswitch:
+                            tt.append(1000)
+                            secondswitch = False
+                        else:
+                            tt.append(ts - prevt)
                 else:
                     tdc.append(d)
                     tc.append(c)
-                    tt.append(t)
+                    if not math.isnan(t):
+                        tt.append(t)
+                    else:
+                        tt.append(0)
                 prevd = d
                 prevc = c
-                prevt = t
+                if not math.isnan(t):
+                    prevt = t
+                else:
+                    prevt = int(ts)
                 i += 1
             ds_newdeaths = pd.Series(tdc, index=dataframe.index)
             ds_newcases = pd.Series(tc, index=dataframe.index)
@@ -173,6 +197,7 @@ class CanadaCovid19(object):
             country_df['confcases'] = country_df['numconf']
             country_df['probcases'] = country_df['numprob']
             country_df['numtested'] = country_df['numtested']
+            country_df['numtests'] = country_df['numtests']
             country_df['numrecover'] = country_df['numrecover']
             country_df['prcrecover'] = country_df['percentrecover']
             country_df['ratetested'] = country_df['ratetested']
@@ -190,6 +215,7 @@ class CanadaCovid19(object):
                     province_df['confcases'] = province_df['numconf']
                     province_df['probcases'] = province_df['numprob']
                     province_df['numtested'] = province_df['numtested']
+                    province_df['numtests'] = province_df['numtests']
                     province_df['numrecover'] = province_df['numrecover']
                     province_df['prcrecover'] = province_df['percentrecover']
                     province_df['ratetested'] = province_df['ratetested']
@@ -233,7 +259,7 @@ class CanadaCovid19(object):
         newcases = df['newcases']
         newdeaths = df['newdeaths']
         newtested = df['newtested']
-        numtested = df['numtested']
+        numtests = df['numtests']
         numrecover = df['numrecover']
 
         if last_30_days:
@@ -242,8 +268,8 @@ class CanadaCovid19(object):
             deaths = df['totaldeaths'][-31:-1]
             newcases = df['newcases'][-31:-1]
             newdeaths = df['newdeaths'][-31:-1]
-            newtested = df['newtested']
             numtested = df['numtested'][-31:-1]
+            numtests = df['numtests'][-31:-1]
             numrecover = df['numrecover'][-31:-1]
 
         # if pd.isna(newcases).any():
@@ -255,7 +281,7 @@ class CanadaCovid19(object):
         else:
             plt.title("Cumulative cases in {}".format(s), fontsize=18)
 
-        plt.bar(dates.values, cases, color='blue', edgecolor='k')
+        plt.bar(dates.values, cases, color='blue', edgecolor='blue')
         plt.xticks(rotation=45, fontsize=14)
         plt.subplots_adjust(bottom=0.22)
         plt.grid()
@@ -269,7 +295,7 @@ class CanadaCovid19(object):
             plt.title("Cumulative deaths in {}, for last 30 days".format(s), fontsize=18)
         else:
             plt.title("Cumulative deaths in {}".format(s), fontsize=18)
-        plt.bar(dates.values, deaths, color='red', edgecolor='k')
+        plt.bar(dates.values, deaths, color='red', edgecolor='red')
         plt.xticks(rotation=45, fontsize=14)
         plt.subplots_adjust(bottom=0.22)
         plt.grid()
@@ -282,7 +308,7 @@ class CanadaCovid19(object):
         else:
             plt.title("New cases in {}".format(s), fontsize=18)
 
-        plt.bar(dates.values, newcases, color='yellow', edgecolor='k')
+        plt.bar(dates.values, newcases, color='yellow', edgecolor='yellow')
         plt.xticks(rotation=45, fontsize=14)
         plt.subplots_adjust(bottom=0.22)
         plt.grid()
@@ -301,8 +327,8 @@ class CanadaCovid19(object):
             plt.title("New cases vs. Tested in {}".format(s), fontsize=18)
 
         plt.xticks(rotation=45, fontsize=14)
-        plt.bar(dates.values, abs(newtested), width=w, color='cyan', label="New Tests")
-        plt.bar(dates.values + w, newcases, width=w, color='blue', label="New Cases")
+        plt.bar(dates.values, abs(newtested), width=w, color='cyan', edgecolor='cyan', label="New Tests")
+        plt.bar(dates.values + w, newcases, width=w, color='blue', edgecolor='blue', label="New Cases")
         # To set the legend on the plot we have used plt.legend()
         plt.legend()
 
@@ -329,7 +355,7 @@ class CanadaCovid19(object):
             else:
                 plt.title("Tested in {}".format(s), fontsize=18)
 
-            plt.bar(dates.values, numtested, color='orange', edgecolor='k')
+            plt.bar(dates.values, numtested, color='orange', edgecolor='orange')
             plt.xticks(rotation=45, fontsize=14)
             plt.subplots_adjust(bottom=0.22)
             plt.grid()
@@ -341,7 +367,7 @@ class CanadaCovid19(object):
             plt.title("Recovered in {}, for last 30 days".format(s), fontsize=18)
         else:
             plt.title("Recovered in {}".format(s), fontsize=18)
-        plt.bar(dates.values, numrecover, color='green', edgecolor='k')
+        plt.bar(dates.values, numrecover, color='green', edgecolor='green')
         plt.xticks(rotation=45, fontsize=14)
         plt.grid()
         plt.subplots_adjust(bottom=0.22)
@@ -415,9 +441,9 @@ class CanadaCovid19(object):
                 plt.plot(date, case, '-o', color='blue', linewidth=2, markersize=4)
             else:
                 if sys.version_info < (3,8):
-                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, base=10)
+                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, basey=10)
                 else:
-                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, base=10)
+                    plt.semilogy(date, case, '-', linewidth=3, markersize=4, basey=10)
 
             plt.xticks(rotation=45, fontsize=14)
 
@@ -436,9 +462,9 @@ class CanadaCovid19(object):
                         exit(2)
                     color = tuple(np.round(np.random.random(3), 3))
                     if sys.version_info < (3,8):
-                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, base=10)
+                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, basey=10)
                     else:
-                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, base=10)
+                        plt.semilogy(date, y_vals, '--', linewidth=0.5, color=color, basey=10)
                     legend.append("Cases double every %d days" % rate)
                 #now draw the tangent
                 draw_tangent(date, case, date.iloc[-4])
@@ -606,7 +632,7 @@ class CanadaCovid19(object):
             labels = [val[1] for val in cases]
             labels2 = ["Test"] + labels  # this is to overcome a bug in the bar function
             x = np.arange(len(labels))  # the label locations
-            axs[pos].bar(x, [val[0] for val in cases], color=color, edgecolor='k')
+            axs[pos].bar(x, [val[0] for val in cases], color=color, edgecolor=color)
             axs[pos].set_title("{} on {}".format(title, str(dt)), fontsize=15)
             axs[pos].xaxis.set_major_locator(plt.FixedLocator(x))
             axs[pos].xaxis.set_major_formatter(plt.FixedFormatter(labels))
